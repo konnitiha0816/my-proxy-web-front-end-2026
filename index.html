@@ -9,38 +9,33 @@
     <script src="uv.config.js"></script>
     
     <style>
-        /* --- 1. 背景と全体設定 --- */
         body, html {
             margin: 0; padding: 0; height: 100%;
             font-family: 'Segoe UI', sans-serif;
-            /* 風景の背景画像（高画質な自然の風景を指定） */
             background-image: url('https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?auto=format&fit=crop&w=1920&q=80');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed; /* 画面遷移しても背景を固定 */
-            color: #ffffff;
-            display: flex; justify-content: center; align-items: center;
+            background-size: cover; background-position: center; background-attachment: fixed;
+            color: #ffffff; display: flex; justify-content: center; align-items: center;
         }
 
-        /* --- 2. グラスモーフィズム（すりガラス風パネル） --- */
+        /* 時計のデザイン */
+        #clock {
+            position: fixed; top: 20px; right: 30px;
+            font-size: 1.8rem; font-family: monospace; font-weight: bold;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.8); z-index: 1000;
+        }
+
         .container {
             background: rgba(15, 15, 15, 0.65);
-            backdrop-filter: blur(12px); /* 背景をぼかす */
-            -webkit-backdrop-filter: blur(12px);
-            padding: 50px 40px;
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            text-align: center;
-            width: 90%; max-width: 450px;
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            padding: 50px 40px; border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7); border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center; width: 90%; max-width: 450px;
         }
 
-        /* --- 3. 画面切り替えのアニメーション --- */
         .screen { display: none; }
         .screen.active { display: block; animation: fadeIn 0.6s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- 4. 各種パーツのデザイン --- */
         h1, h2 { margin-top: 0; letter-spacing: 2px; text-shadow: 0 2px 5px rgba(0,0,0,0.8); }
         p { color: #cccccc; margin-bottom: 30px; }
         
@@ -50,7 +45,6 @@
         }
         .btn:hover { background: #00c853; transform: scale(1.03); box-shadow: 0 0 20px rgba(0, 230, 118, 0.4); }
 
-        /* パスワード入力欄 */
         input[type="password"] {
             width: 100%; padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2);
             background: rgba(0,0,0,0.5); color: #fff; font-size: 1.5rem; text-align: center;
@@ -59,7 +53,6 @@
         input[type="password"]:focus { border-color: #00e676; }
         .error { color: #ff5252; font-size: 0.9rem; display: none; margin-bottom: 20px; }
 
-        /* URL入力欄（https:// 固定デザイン） */
         .url-box {
             display: flex; align-items: center; background: rgba(0,0,0,0.6);
             border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; padding: 5px 15px; margin-bottom: 30px;
@@ -73,6 +66,8 @@
     </style>
 </head>
 <body>
+
+    <div id="clock"></div>
 
     <div class="container">
         <div id="screen-title" class="screen active">
@@ -104,57 +99,72 @@
     </div>
 
     <script>
-        // 1. 画面を切り替える関数（SPAの要）
+        // 🕒 時計機能（日本時間 JST に固定）
+        function updateClock() {
+            const now = new Date();
+            // サーバー環境によらず、強制的に日本時間(UTC+9)を計算
+            const jstTime = new Date(now.getTime() + (now.getTimezoneOffset() + 540) * 60000);
+            const hours = String(jstTime.getHours()).padStart(2, '0');
+            const minutes = String(jstTime.getMinutes()).padStart(2, '0');
+            document.getElementById('clock').innerText = hours + ":" + minutes;
+        }
+        setInterval(updateClock, 1000);
+        updateClock(); // ページ読み込み時にすぐ表示
+
+        // 画面切り替え
         function goToScreen(screenId) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
         }
 
-        // 2. パスワードの検証（0816）
+        // パスワード認証
         function verifyPassword() {
             const pass = document.getElementById('passInput').value;
-            // ※注意: フロントエンドでの認証なので、ソースコードを見れる人にはパスワードは分かります。
-            // しかし、簡易的な関所としては十分機能します。
             if (pass === '0816') {
                 goToScreen('screen-proxy');
-                initServiceWorker(); // 画面3に行くと同時に裏でステルス機能を準備する
+                initServiceWorker(); 
             } else {
                 document.getElementById('errorMsg').style.display = 'block';
                 document.getElementById('passInput').value = '';
             }
         }
 
-        // Enterキーでボタンを押せるようにする便利機能
         function checkEnter(e, func) {
             if (e.key === 'Enter') func();
         }
 
-        // 3. Service Workerの起動（通信傍受の準備）
+        // 🚀 暗号化エンジンの起動
         async function initServiceWorker() {
             const status = document.getElementById('statusText');
             if ('serviceWorker' in navigator) {
                 try {
                     status.innerText = "暗号化エンジンをロード中...";
-                    await navigator.serviceWorker.register('sw.js', { scope: __uv$config.prefix });
+                    // スコープの明示を外し、相対パスのズレを防ぐ
+                    await navigator.serviceWorker.register('sw.js');
                     status.innerText = "準備完了：通信は全て暗号化されます";
                 } catch (e) {
-                    status.innerText = "エンジンの起動に失敗しました";
+                    // 何が原因で失敗したかエラーメッセージを表示するように強化
+                    status.innerText = "エンジンの起動失敗: " + e.message;
                 }
+            } else {
+                status.innerText = "お使いのブラウザは非対応です";
             }
         }
 
-        // 4. プロキシの実行（入力URLの改変とリダイレクト）
+        // プロキシ起動
         function startProxy() {
+            const status = document.getElementById('statusText').innerText;
+            // エンジンが起動していないのにボタンを押した場合は止める
+            if (!status.includes("準備完了")) {
+                alert("エンジンが起動していません。一度ページをリロード（F5）してやり直してください。");
+                return;
+            }
+
             const domain = document.getElementById('urlInput').value.trim();
             if (!domain) return;
 
-            // デザイン上の「https://」と、入力された「youtube.com」を結合して完全なURLを作る
             const targetUrl = 'https://' + domain;
-
-            // UltravioletのXORエンジンでURLを匿名文字列に改変
             const encodedUrl = __uv$config.encodeUrl(targetUrl);
-
-            // 改変されたURLへリダイレクト（ここでIP隠蔽とプロキシが発動）
             window.location.href = __uv$config.prefix + encodedUrl;
         }
     </script>
