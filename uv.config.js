@@ -1,11 +1,10 @@
 self.__uv$config = {
-    // 👇 ここが一番重要！ リポジトリ名を挟んだ正しいパスです
-    prefix: '/my-stealth-web/service/',
+    // 👇 あなたのリポジトリ名に合わせた正しいパス（非常に重要です）
+    prefix: '/my-proxy-web-front-end-2026/service/',
     
-    // 👇 あなたのRenderのURL（末尾の /bare/ を忘れずに）
+    // 👇 あなたのRenderのURLに書き換えてください（最後の /bare/ は消さない）
     bare: 'https://tomato-kyuri.onrender.com/bare/', 
     
-    // 👇 ここから下が「以下略」にしてしまっていた、絶対に消してはいけない必須機能群です
     encodeUrl: Ultraviolet.codec.xor.encode,
     decodeUrl: Ultraviolet.codec.xor.decode,
     handler: 'https://unpkg.com/@titaniumnetwork-dev/ultraviolet@3.2.4/dist/uv.handler.js',
